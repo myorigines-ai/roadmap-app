@@ -1,0 +1,85 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model Card {
+  id               Int       @id @default(autoincrement())
+  jiraKey          String?   @unique
+  jiraUrl          String?
+  summary          String
+  status           String
+  jiraPriority     String?
+  businessPriority Int?
+  project          String
+  comment          String?
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  dateKnown        Boolean   @default(true)
+
+  comments         Comment[]
+  history          History[]
+  customValues     CustomFieldValue[]
+  customColumns    CustomColumn[] @relation("CardCustomColumns")
+}
+
+// Colonnes personnalisées par projet ou par carte
+model CustomColumn {
+  id        Int      @id @default(autoincrement())
+  project   String   // Projet associé (ou "__global__" pour tous)
+  cardId    Int?     // Si défini, colonne spécifique à cette carte uniquement
+  name      String   // Nom de la colonne
+  type      String   @default("text") // text, number, date, select
+  options   String?  // Options JSON pour type "select"
+  position  Int      @default(0) // Ordre d'affichage
+  createdAt DateTime @default(now())
+
+  values    CustomFieldValue[]
+  card      Card?    @relation("CardCustomColumns", fields: [cardId], references: [id], onDelete: Cascade)
+
+  @@unique([project, name, cardId])
+}
+
+// Valeurs des champs custom par carte
+model CustomFieldValue {
+  id        Int      @id @default(autoincrement())
+  cardId    Int
+  columnId  Int
+  value     String?
+
+  card      Card         @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  column    CustomColumn @relation(fields: [columnId], references: [id], onDelete: Cascade)
+
+  @@unique([cardId, columnId])
+}
+
+model Comment {
+  id        Int      @id @default(autoincrement())
+  cardId    Int
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  author    String
+  content   String
+  createdAt DateTime @default(now())
+}
+
+model History {
+  id        Int      @id @default(autoincrement())
+  cardId    Int
+  card      Card     @relation(fields: [cardId], references: [id], onDelete: Cascade)
+  field     String
+  oldValue  String?
+  newValue  String?
+  changedBy String
+  changedAt DateTime @default(now())
+}
+
+model JiraConfig {
+  id       Int    @id @default(autoincrement())
+  email    String
+  apiToken String
+  baseUrl  String @default("https://myorigines.atlassian.net")
+}
