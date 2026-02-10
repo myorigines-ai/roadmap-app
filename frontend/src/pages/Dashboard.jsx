@@ -13,7 +13,7 @@ export default function Dashboard() {
   const initialProject = searchParams.get('project') || '';
 
   const [cards, setCards] = useState([]);
-  const [filters, setFilters] = useState(initialProject ? { project: initialProject } : {});
+  const [filters, setFilters] = useState({});
   const [projects, setProjects] = useState([]);
   const [statuses, setStatuses] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -38,6 +38,11 @@ export default function Dashboard() {
       ]);
       setProjects(projectsList);
       setStatuses(statusesList);
+
+      // Apply URL project filter only if project exists in DB
+      if (initialProject && projectsList.includes(initialProject)) {
+        setFilters(prev => ({ ...prev, project: initialProject }));
+      }
     } catch (error) {
       console.error('Failed to load meta:', error);
     }
